@@ -1,32 +1,33 @@
+
 #import <Foundation/Foundation.h>
 #import "TwitterConnect.h"
-#import <Fabric/Fabric.h>
+
+#import <Twitter/Twitter.h>
 #import <TwitterKit/TwitterKit.h>
 
 @implementation TwitterConnect
 
 - (void)pluginInitialize
 {
-
+    
     NSString* consumerKey = [self.commandDelegate.settings objectForKey:[@"TwitterConsumerKey" lowercaseString]];
     NSString* consumerSecret = [self.commandDelegate.settings objectForKey:[@"TwitterConsumerSecret" lowercaseString]];
-
+    
     [[Twitter sharedInstance] startWithConsumerKey:consumerKey consumerSecret:consumerSecret];
-    [Fabric with:@[[Twitter sharedInstance]]];
-
-    [Fabric with:@[TwitterKit]];
+  
 }
-
 
 - (void)login:(CDVInvokedUrlCommand*)command
 {
     [[Twitter sharedInstance] logInWithCompletion:^(TWTRSession *session, NSError *error) {
 		if (session){
 			NSLog(@"signed in as %@", [session userName]);
+            NSLog(@"userID %@", [session userID]);
 
-            [[[Twitter sharedInstance] APIClient] loadUserWithID:[session userID]
-                                                  completion:^(TWTRUser *user,
-                                                               NSError *error)
+            TWTRAPIClient *client = [[TWTRAPIClient alloc] init];
+            [client loadUserWithID:[session userID]
+                                      completion:^(TWTRUser *user,
+                                                   NSError *error)
             {
                 if (user) {
                     NSDictionary *userSession = @{
@@ -35,7 +36,6 @@
 										  @"secret": [session authTokenSecret],
 										  @"token" : [session authToken],
 										  @"name"  : user.name,
-										  @"userID" : user.userID,
 										  @"screenName" : user.screenName,
 										  @"profileImageURL" : user.profileImageURL,
                                           };
@@ -60,8 +60,8 @@
 - (void)logout:(CDVInvokedUrlCommand*)command
 {
     [[Twitter sharedInstance] logOut];
-	CDVPluginResult* pluginResult = pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-	[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    CDVPluginResult* pluginResult = pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 
 @end
